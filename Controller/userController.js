@@ -100,3 +100,164 @@ exports.verifyOtp = async (req, res) => {
     res.status(500).json("Server Error");
   }
 };
+
+// Login User and Generate JWT Token
+exports.loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input fields
+    if (!email || !password) {
+      return res.status(400).json("Email and Password are required");
+    }
+
+    // Find user by email
+    const user = await users.findOne({ email });
+    if (!user) {
+      return res.status(404).json("User not found");
+    }
+
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json("Invalid password");
+    }
+
+    // Generate JWT Token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, role: user.role },
+      process.env.JWT_SUPERKEY, // JWT secret key, should be in environment variables
+      { expiresIn: "1h" } // Token expiration time (1 hour)
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token, // Return the generated JWT token
+    });
+  } catch (error) {
+    console.error("Error in loginUser:", error);
+    res.status(500).json("Server Error");
+  }
+};
+
+// Step 1: Send OTP for Password Reset
+exports.forgetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validate email
+    if (!email) {
+      return res.status(400).json("Email is required");
+    }
+
+    // Check if user exists
+    const user = await users.findOne({ email });
+    if (!user) {
+      return res.status(404).json("User not found");
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = { otp, expires: Date.now() + 10 * 60 * 1000 }; // Store OTP with 10-minute expiry
+
+    // Send OTP Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP for Password Reset",
+      text: `${otp} is the OTP for resetting your password. It is valid for the next 10 minutes. Please do not share it with anyone.`,
+    };
+    await transporter.sendMail(mailOptions);
+
+    res
+      .status(200)
+      .json("OTP sent to your email. Please verify within 10 minutes.");
+  } catch (error) {
+    console.error("Error in forgetPassword:", error);
+    res.status(500).json("Server Error");
+  }
+};
+
+// Step 2: Verify OTP for Password Reset
+exports.verifyOtpForPasswordReset = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Validate input fields
+    if (!email || !otp) {
+      return res.status(400).json("Email and OTP are required");
+    }
+
+    // Check OTP validity
+    const storedOtp = otpStore[email];
+    if (!storedOtp) {
+      return res.status(400).json("No OTP found. Please request again.");
+    }
+    if (storedOtp.otp !== otp.toString()) {
+      return res.status(401).json("Invalid OTP");
+    }
+    if (Date.now() > storedOtp.expires) {
+      delete otpStore[email];
+      return res.status(401).json("OTP expired. Please request again.");
+    }
+
+    res.status(200).json("OTP verified successfully");
+  } catch (error) {
+    console.error("Error in verifyOtpForPasswordReset:", error);
+    res.status(500).json("Server Error");
+  }
+};
+
+// Step 3: Reset Password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    // Validate input fields
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json("All fields are required");
+    }
+
+    // Check OTP validity
+    const storedOtp = otpStore[email];
+    if (!storedOtp) {
+      return res.status(400).json("No OTP found. Please request again.");
+    }
+    if (storedOtp.otp !== otp.toString()) {
+      return res.status(401).json("Invalid OTP");
+    }
+    if (Date.now() > storedOtp.expires) {
+      delete otpStore[email];
+      return res.status(401).json("OTP expired. Please request again.");
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update user's password in the database
+    await users.updateOne({ email }, { password: hashedPassword });
+
+    delete otpStore[email]; // Clear OTP after successful password reset
+
+    res.status(200).json("Password reset successful");
+  } catch (error) {
+    console.error("Error in resetPassword:", error);
+    res.status(500).json("Server Error");
+  }
+};
+
+exports.getCurrentUserDetails = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    console.log(userId);
+    const user = await users.findById(userId).select("-password"); // Exclude the password
+    console.log(user);
+    res.status(200).json({
+      user, // Return the generated JWT token
+    });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res.status(500).json("Server Error");
+  }
+};

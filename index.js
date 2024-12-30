@@ -33,7 +33,7 @@ const limiter = rateLimit({
 });
 whiterServer.use(limiter);
 
-whiterServer.use(router);
+whiterServer.use("/api",router);
 
 const PORT = process.env.PORT || 4000;
 
