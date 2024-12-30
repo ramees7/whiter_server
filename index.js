@@ -1,39 +1,52 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const bodyParser = require("body-parser");
-const cors = require("cors");
 require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+require("./Connections/db");
+const router = require("./Routes/router");
 
-// Initialize the Express app
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("Connected to MongoDB!");
-  } catch (error) {
-    console.error("MongoDB connection error:", error.message);
-    process.exit(1); // Exit process with failure
-  }
+const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"]; // Update with production URLs
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS error: Unauthorized request."));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 };
 
-// Routes
-app.get("/", (req, res) => {
-  res.send("Welcome to the backend server!");
+const whiterServer = express();
+whiterServer.use(helmet());
+whiterServer.use(cors(corsOptions));
+whiterServer.use(express.json());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again later.",
+});
+whiterServer.use(limiter);
+
+whiterServer.use(router);
+
+const PORT = process.env.PORT || 4000;
+
+whiterServer.listen(PORT, () => {
+  console.log(`Whiter server started on port ${PORT}`);
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
+whiterServer.get("/", (req, res) => {
+  res.send("<h1>Daily Whiter Started... Waiting for Client requests...!!</h1>");
+});
 
-app.listen(PORT, async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  await connectDB();
+// Centralized error handling
+whiterServer.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Internal Server Error" });
 });
