@@ -2,6 +2,7 @@ const users = require("../Models/userSchema");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const { blacklistToken } = require("../Middleware/authMiddleware");
 
 let user;
 let otpStore = {}; // Temporary store for OTPs linked to emails
@@ -62,15 +63,97 @@ exports.registerUser = async (req, res) => {
     res.status(500).json("Server Error");
   }
 };
+exports.registerAdmin = async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !phone || !password) {
+      return res.status(400).json("All fields are required");
+    }
+
+    // Verify that the request is coming from an existing admin
+    const loggedInUser = req.user; // Assuming you're using middleware to get the logged-in user
+    if (!loggedInUser || loggedInUser.role !== "admin") {
+      return res
+        .status(403)
+        .json("You are not authorized to register an admin.");
+    }
+
+    // Check for existing user
+    const existingUser = await users.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      return res.status(409).json("Email or Phone already exists");
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = { otp, expires: Date.now() + 10 * 60 * 1000 }; // Store OTP with expiry (10 minutes)
+
+    // Send OTP Email (ensure transporter is set up correctly)
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP for Admin Registration",
+      text: `<#> ${otp} is the One Time Password (OTP) for your admin registration to the Whiter Web App. OTP is valid for the next 10 minutes. Please do not share with anyone.`,
+    };
+    await transporter.sendMail(mailOptions);
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
+
+    user = new users({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role: "admin",
+    });
+    res
+      .status(200)
+      .json("OTP sent to your email. Please verify within 10 minutes.");
+  } catch (error) {
+    console.error("Error in registerAdmin:", error);
+    res.status(500).json("Server Error");
+  }
+};
+// Resend OTP Endpoint
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email exists in the request
+    if (!email) {
+      return res.status(400).json("Email is required.");
+    }
+    // Generate a new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = { otp, expires: Date.now() + 10 * 60 * 1000 }; // New OTP with expiry
+
+    // Send OTP Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP for Whiter Registration",
+      text: `<#> ${otp} is the One Time Password (OTP) for your login to the Whiter Web App. OTP is valid for the next 10 minutes. Please do not share with anyone.`,
+    };
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json("OTP has been resent to your email!");
+  } catch (error) {
+    console.error("Error in resendOtp:", error);
+    res.status(500).json("Server Error");
+  }
+};
 
 // Verify OTP and Finalize Registration (Step 2)
 exports.verifyOtp = async (req, res) => {
   try {
-    const { otp } = req.body;
+    const { otp, email } = req.body;
 
     const enteredOtp = otp.toString();
     // Check OTP validity
-    const storedOtp = otpStore[user.email];
+    const storedOtp = otpStore[email];
 
     if (!storedOtp) {
       return res.status(400).json("No OTP found. Please request again.");
@@ -79,7 +162,7 @@ exports.verifyOtp = async (req, res) => {
       return res.status(401).json("Invalid OTP");
     }
     if (Date.now() > storedOtp.expires) {
-      delete otpStore[user.email];
+      delete otpStore[email];
       return res.status(401).json("OTP expired. Please request again.");
     }
 
@@ -89,6 +172,7 @@ exports.verifyOtp = async (req, res) => {
       email: user.email,
       phone: user.phone,
       password: user.password, // Make sure hashed password is passed
+      role: user.role ? user.role : "user",
     });
 
     await newUser.save();
@@ -208,6 +292,51 @@ exports.verifyOtpForPasswordReset = async (req, res) => {
   }
 };
 
+// Resend OTP Endpoint
+exports.resendOtpResetPass = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email exists in the request
+    if (!email) {
+      return res.status(400).json("Email is required.");
+    }
+
+    // Find the user in the database
+    const user = await users.findOne({ email });
+
+    // Validate if user exists and is not verified
+    if (!user) {
+      return res.status(404).json("User not found.");
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json("User is already verified.");
+    }
+
+    // Generate a new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+    await user.save();
+
+    // Send OTP Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP for Registration",
+      text: `<#> ${otp} is the One Time Password (OTP) for your login. OTP is valid for the next 10 minutes. Please do not share it with anyone.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json("OTP has been resent to your email!");
+  } catch (error) {
+    console.error("Error in resendOtp:", error);
+    res.status(500).json("Server Error");
+  }
+};
+
 // Step 3: Reset Password
 exports.resetPassword = async (req, res) => {
   try {
@@ -245,6 +374,17 @@ exports.resetPassword = async (req, res) => {
     console.error("Error in resetPassword:", error);
     res.status(500).json("Server Error");
   }
+};
+
+exports.logoutUser = (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Extract token
+
+  if (!token) {
+    return res.status(400).json("Token is required for logout");
+  }
+
+  blacklistToken(token); // Invalidate the token by adding it to the blacklist
+  res.status(200).json("Logout successful");
 };
 
 exports.getCurrentUserDetails = async (req, res) => {

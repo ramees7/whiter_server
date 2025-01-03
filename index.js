@@ -33,6 +33,7 @@ const limiter = rateLimit({
 });
 whiterServer.use(limiter);
 
+whiterServer.use("/uploads", express.static("uploads"));
 whiterServer.use("/api",router);
 
 const PORT = process.env.PORT || 4000;

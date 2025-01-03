@@ -1,11 +1,17 @@
 const jwt = require("jsonwebtoken");
 
+const blacklist = new Set(); // In-memory token blacklist
+
 // JWT Middleware for Authorization
 const jwtMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]; // Extract token from Authorization header
 
   if (!token) {
     return res.status(401).json("Authorization token is missing");
+  }
+
+  if (blacklist.has(token)) {
+    return res.status(401).json("Token is invalid or expired");
   }
 
   try {
@@ -18,4 +24,9 @@ const jwtMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = jwtMiddleware;
+// Function to blacklist a token
+const blacklistToken = (token) => {
+  blacklist.add(token);
+};
+
+module.exports = { jwtMiddleware, blacklistToken };
