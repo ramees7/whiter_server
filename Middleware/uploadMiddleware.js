@@ -4,4 +4,3 @@ const setUploadMiddleware = (context) => (req, res, next) => {
   };
   
 module.exports = setUploadMiddleware;
-  

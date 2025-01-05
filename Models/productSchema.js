@@ -71,7 +71,7 @@ const productSchema = new Schema(
       max: 5,
     },
     reviews: {
-      type: Number,
+      type: String,
       required: true,
     },
     sku: {

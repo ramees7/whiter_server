@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 require("./Connections/db");
 const router = require("./Routes/router");
+const bodyParser = require("body-parser");
 
 const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"]; // Update with production URLs
 const corsOptions = {
@@ -24,6 +25,7 @@ const whiterServer = express();
 whiterServer.use(helmet());
 whiterServer.use(cors(corsOptions));
 whiterServer.use(express.json());
+whiterServer.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({

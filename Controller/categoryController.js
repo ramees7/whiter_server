@@ -2,6 +2,47 @@ const categories = require("../Models/categorySchema");
 const fs = require("fs");
 const path = require("path");
 
+// exports.createCategory = async (req, res) => {
+//   try {
+//     const { category_name, description } = req.body;
+
+//     // Validate required fields
+//     if (!category_name || !description) {
+//       return res
+//         .status(400)
+//         .json({ message: "Category name and description are required" });
+//     }
+
+//     // Check if category already exists
+//     const existingCategory = await categories.findOne({ category_name });
+//     if (existingCategory) {
+//       return res
+//         .status(409)
+//         .json({ message: "Category with this name already exists" });
+//     }
+
+//     // Extract the uploaded file path
+//     const thumbnail_image = req.file ? req.file.path : null;
+
+//     // Create new category
+//     const newCategory = new categories({
+//       category_name,
+//       description,
+//       thumbnail_image, // Add the uploaded file path
+//     });
+
+//     // Save category to the database
+//     await newCategory.save();
+
+//     return res
+//       .status(201)
+//       .json({ message: "Category created successfully", newCategory });
+//   } catch (error) {
+//     // console.error("Error creating category:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 exports.createCategory = async (req, res) => {
   try {
     const { category_name, description } = req.body;
@@ -21,14 +62,32 @@ exports.createCategory = async (req, res) => {
         .json({ message: "Category with this name already exists" });
     }
 
-    // Extract the uploaded file path
-    const thumbnail_image = req.file ? req.file.path : null;
+    // Temporary file path
+    const tempPath = req.file ? req.file.path : null;
+
+    // Define final folder for category thumbnails
+    const finalFolder = path.join(__dirname, "../", "uploads/categories");
+    if (!fs.existsSync(finalFolder)) {
+      fs.mkdirSync(finalFolder, { recursive: true });
+    }
+
+    let finalThumbnailPath = null;
+
+    // Move file to final folder if upload succeeded
+    if (tempPath) {
+      const finalFileName = `${Date.now()}-${req.file.originalname.replace(
+        /\s+/g,
+        "_"
+      )}`;
+      finalThumbnailPath = path.join(finalFolder, finalFileName);
+      fs.renameSync(tempPath, finalThumbnailPath); // Move file
+    }
 
     // Create new category
     const newCategory = new categories({
       category_name,
       description,
-      thumbnail_image, // Add the uploaded file path
+      thumbnail_image: finalThumbnailPath, // Save final file path
     });
 
     // Save category to the database
@@ -38,7 +97,13 @@ exports.createCategory = async (req, res) => {
       .status(201)
       .json({ message: "Category created successfully", newCategory });
   } catch (error) {
-    // console.error("Error creating category:", error);
+    console.error("Error creating category:", error);
+
+    // Cleanup temporary files on error
+    if (req.file && req.file.path) {
+      fs.unlinkSync(req.file.path);
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -71,9 +136,57 @@ exports.getCategoryById = async (req, res) => {
 // Controller to update a category by ID
 exports.updateCategory = async (req, res) => {
   try {
-    const { category_name, description, thumbnail_image } = req.body;
+    const { category_name, description } = req.body;
     const categoryId = req.params.id;
 
+    // Find the existing category
+    const existingCategory = await categories.findById(categoryId);
+    if (!existingCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    let thumbnail_image = existingCategory.thumbnail_image; // Retain current image
+
+    // Check if a new file is uploaded
+    if (req.file) {
+      // Final folder for category thumbnails
+      const finalFolder = path.join(__dirname, "../", "uploads/categories");
+      if (!fs.existsSync(finalFolder)) {
+        fs.mkdirSync(finalFolder, { recursive: true });
+      }
+
+      // Generate final path for the new image
+      const finalFileName = `${Date.now()}-${req.file.originalname.replace(
+        /\s+/g,
+        "_"
+      )}`;
+      const finalThumbnailPath = path.join(finalFolder, finalFileName);
+
+      // Move the uploaded file to the final folder
+      fs.renameSync(req.file.path, finalThumbnailPath);
+
+      // Delete the old image if it exists
+      if (thumbnail_image && fs.existsSync(thumbnail_image)) {
+        fs.unlinkSync(thumbnail_image);
+      }
+
+      // Update the image path
+      thumbnail_image = finalThumbnailPath;
+    }
+
+    // Determine if there are any changes to update
+    const isCategoryNameSame = category_name === existingCategory.category_name;
+    const isDescriptionSame = description === existingCategory.description;
+    const isImageSame = thumbnail_image === existingCategory.thumbnail_image;
+
+    // If no changes, return a response without updating
+    if (isCategoryNameSame && isDescriptionSame && isImageSame) {
+      return res
+        .status(200)
+        .json({ message: "No changes detected", category: existingCategory });
+    }
+
+    // Update the category fields
     const updatedCategory = await categories.findByIdAndUpdate(
       categoryId,
       {
@@ -84,15 +197,17 @@ exports.updateCategory = async (req, res) => {
       { new: true } // Return the updated category object
     );
 
-    if (!updatedCategory) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-
     return res
       .status(200)
       .json({ message: "Category updated successfully", updatedCategory });
   } catch (error) {
     console.error("Error updating category:", error);
+
+    // Cleanup temporary files on error
+    if (req.file && req.file.path) {
+      fs.unlinkSync(req.file.path);
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 };
