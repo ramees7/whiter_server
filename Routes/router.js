@@ -28,6 +28,7 @@ const {
   getAllProducts,
   getProductById,
   deleteProduct,
+  updateProduct,
 } = require("../Controller/productController");
 
 const router = new express.Router();
@@ -54,11 +55,18 @@ router.post(
 );
 router.get("/get-categories", getAllCategories);
 router.get("/get-category/:id", getCategoryById);
-router.put(
+// router.put(
+//   "/updatecategory/:id",
+//   verifyAdmin,
+//   setUploadMiddleware("category"), // Sets the folder context to "categories"
+//   multerConfig.single("thumbnail_image"),
+//   updateCategory
+// );
+router.patch(
   "/updatecategory/:id",
   verifyAdmin,
   setUploadMiddleware("category"), // Sets the folder context to "categories"
-  multerConfig.single("thumbnail_image"),
+  multerConfig.single("thumbnail_image"), // Ensure the image field is handled
   updateCategory
 );
 router.delete("/delete-category/:id", verifyAdmin, deleteCategory);
@@ -71,6 +79,13 @@ router.post(
 );
 router.get("/get-all-products", getAllProducts);
 router.get("/get-product/:id", getProductById);
+router.patch(
+  "/update-product/:id",
+  verifyAdmin,
+  setUploadMiddleware("product"),
+  multerConfig.array("imageUrls", 5),
+  updateProduct
+);
 router.delete("/delete-product/:id", verifyAdmin, deleteProduct);
 
 module.exports = router;

@@ -2,46 +2,6 @@ const categories = require("../Models/categorySchema");
 const fs = require("fs");
 const path = require("path");
 
-// exports.createCategory = async (req, res) => {
-//   try {
-//     const { category_name, description } = req.body;
-
-//     // Validate required fields
-//     if (!category_name || !description) {
-//       return res
-//         .status(400)
-//         .json({ message: "Category name and description are required" });
-//     }
-
-//     // Check if category already exists
-//     const existingCategory = await categories.findOne({ category_name });
-//     if (existingCategory) {
-//       return res
-//         .status(409)
-//         .json({ message: "Category with this name already exists" });
-//     }
-
-//     // Extract the uploaded file path
-//     const thumbnail_image = req.file ? req.file.path : null;
-
-//     // Create new category
-//     const newCategory = new categories({
-//       category_name,
-//       description,
-//       thumbnail_image, // Add the uploaded file path
-//     });
-
-//     // Save category to the database
-//     await newCategory.save();
-
-//     return res
-//       .status(201)
-//       .json({ message: "Category created successfully", newCategory });
-//   } catch (error) {
-//     // console.error("Error creating category:", error);
-//     return res.status(500).json({ message: "Server error" });
-//   }
-// };
 
 exports.createCategory = async (req, res) => {
   try {
@@ -133,84 +93,84 @@ exports.getCategoryById = async (req, res) => {
   }
 };
 
-// Controller to update a category by ID
-exports.updateCategory = async (req, res) => {
-  try {
-    const { category_name, description } = req.body;
-    const categoryId = req.params.id;
+// // Controller to update a category by ID
+// exports.updateCategory = async (req, res) => {
+//   try {
+//     const { category_name, description } = req.body;
+//     const categoryId = req.params.id;
 
-    // Find the existing category
-    const existingCategory = await categories.findById(categoryId);
-    if (!existingCategory) {
-      return res.status(404).json({ message: "Category not found" });
-    }
+//     // Find the existing category
+//     const existingCategory = await categories.findById(categoryId);
+//     if (!existingCategory) {
+//       return res.status(404).json({ message: "Category not found" });
+//     }
 
-    let thumbnail_image = existingCategory.thumbnail_image; // Retain current image
+//     let thumbnail_image = existingCategory.thumbnail_image; // Retain current image
 
-    // Check if a new file is uploaded
-    if (req.file) {
-      // Final folder for category thumbnails
-      const finalFolder = path.join(__dirname, "../", "uploads/categories");
-      if (!fs.existsSync(finalFolder)) {
-        fs.mkdirSync(finalFolder, { recursive: true });
-      }
+//     // Check if a new file is uploaded
+//     if (req.file) {
+//       // Final folder for category thumbnails
+//       const finalFolder = path.join(__dirname, "../", "uploads/categories");
+//       if (!fs.existsSync(finalFolder)) {
+//         fs.mkdirSync(finalFolder, { recursive: true });
+//       }
 
-      // Generate final path for the new image
-      const finalFileName = `${Date.now()}-${req.file.originalname.replace(
-        /\s+/g,
-        "_"
-      )}`;
-      const finalThumbnailPath = path.join(finalFolder, finalFileName);
+//       // Generate final path for the new image
+//       const finalFileName = `${Date.now()}-${req.file.originalname.replace(
+//         /\s+/g,
+//         "_"
+//       )}`;
+//       const finalThumbnailPath = path.join(finalFolder, finalFileName);
 
-      // Move the uploaded file to the final folder
-      fs.renameSync(req.file.path, finalThumbnailPath);
+//       // Move the uploaded file to the final folder
+//       fs.renameSync(req.file.path, finalThumbnailPath);
 
-      // Delete the old image if it exists
-      if (thumbnail_image && fs.existsSync(thumbnail_image)) {
-        fs.unlinkSync(thumbnail_image);
-      }
+//       // Delete the old image if it exists
+//       if (thumbnail_image && fs.existsSync(thumbnail_image)) {
+//         fs.unlinkSync(thumbnail_image);
+//       }
 
-      // Update the image path
-      thumbnail_image = finalThumbnailPath;
-    }
+//       // Update the image path
+//       thumbnail_image = finalThumbnailPath;
+//     }
 
-    // Determine if there are any changes to update
-    const isCategoryNameSame = category_name === existingCategory.category_name;
-    const isDescriptionSame = description === existingCategory.description;
-    const isImageSame = thumbnail_image === existingCategory.thumbnail_image;
+//     // Determine if there are any changes to update
+//     const isCategoryNameSame = category_name === existingCategory.category_name;
+//     const isDescriptionSame = description === existingCategory.description;
+//     const isImageSame = thumbnail_image === existingCategory.thumbnail_image;
 
-    // If no changes, return a response without updating
-    if (isCategoryNameSame && isDescriptionSame && isImageSame) {
-      return res
-        .status(200)
-        .json({ message: "No changes detected", category: existingCategory });
-    }
+//     // If no changes, return a response without updating
+//     if (isCategoryNameSame && isDescriptionSame && isImageSame) {
+//       return res
+//         .status(200)
+//         .json({ message: "No changes detected", category: existingCategory });
+//     }
 
-    // Update the category fields
-    const updatedCategory = await categories.findByIdAndUpdate(
-      categoryId,
-      {
-        category_name,
-        description,
-        thumbnail_image,
-      },
-      { new: true } // Return the updated category object
-    );
+//     // Update the category fields
+//     const updatedCategory = await categories.findByIdAndUpdate(
+//       categoryId,
+//       {
+//         category_name,
+//         description,
+//         thumbnail_image,
+//       },
+//       { new: true } // Return the updated category object
+//     );
 
-    return res
-      .status(200)
-      .json({ message: "Category updated successfully", updatedCategory });
-  } catch (error) {
-    console.error("Error updating category:", error);
+//     return res
+//       .status(200)
+//       .json({ message: "Category updated successfully", updatedCategory });
+//   } catch (error) {
+//     console.error("Error updating category:", error);
 
-    // Cleanup temporary files on error
-    if (req.file && req.file.path) {
-      fs.unlinkSync(req.file.path);
-    }
+//     // Cleanup temporary files on error
+//     if (req.file && req.file.path) {
+//       fs.unlinkSync(req.file.path);
+//     }
 
-    return res.status(500).json({ message: "Server error" });
-  }
-};
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 exports.deleteCategory = async (req, res) => {
   try {
@@ -236,6 +196,93 @@ exports.deleteCategory = async (req, res) => {
     return res.status(200).json({ message: "Category deleted successfully" });
   } catch (error) {
     console.error("Error deleting category:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+// Controller to update a category by ID using PATCH
+exports.updateCategory = async (req, res) => {
+  try {
+    const { category_name, description } = req.body;
+    const categoryId = req.params.id;
+
+    // Find the existing category
+    const existingCategory = await categories.findById(categoryId);
+    if (!existingCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // Set all fields to the existing values initially
+    // let updatedCategoryName = existingCategory.category_name;
+    // let updatedDescription = existingCategory.description;
+    let updatedThumbnailImage = existingCategory.thumbnail_image;
+
+    // Check if a new file is uploaded
+    if (req.file) {
+      // Final folder for category thumbnails
+      const finalFolder = path.join(__dirname, "../", "uploads/categories");
+      if (!fs.existsSync(finalFolder)) {
+        fs.mkdirSync(finalFolder, { recursive: true });
+      }
+
+      // Generate final path for the new image
+      const finalFileName = `${Date.now()}-${req.file.originalname.replace(
+        /\s+/g,
+        "_"
+      )}`;
+      const finalThumbnailPath = path.join(finalFolder, finalFileName);
+
+      // Move the uploaded file to the final folder
+      fs.renameSync(req.file.path, finalThumbnailPath);
+
+      // Delete the old image if it exists
+      if (updatedThumbnailImage && fs.existsSync(updatedThumbnailImage)) {
+        fs.unlinkSync(updatedThumbnailImage);
+      }
+
+      // Set the updated thumbnail image path
+      updatedThumbnailImage = finalThumbnailPath;
+    }
+
+    // Determine if any field has been updated
+    const isCategoryNameUpdated = category_name && category_name !== existingCategory.category_name;
+    const isDescriptionUpdated = description && description !== existingCategory.description;
+    const isImageUpdated = updatedThumbnailImage !== existingCategory.thumbnail_image;
+
+    // If no changes detected, return an error message
+    if (!isCategoryNameUpdated && !isDescriptionUpdated && !isImageUpdated) {
+      return res.status(400).json({ message: "No changes detected. Category was not updated." });
+    }
+
+    // Create an object with only the fields that have changed
+    const updatedData = {};
+    if (isCategoryNameUpdated) {
+      updatedData.category_name = category_name;
+    }
+    if (isDescriptionUpdated) {
+      updatedData.description = description;
+    }
+    if (isImageUpdated) {
+      updatedData.thumbnail_image = updatedThumbnailImage;
+    }
+
+    // Update the category fields only if there are changes
+    const updatedCategory = await categories.findByIdAndUpdate(
+      categoryId,
+      updatedData,
+      { new: true } // Return the updated category object
+    );
+
+    return res.status(200).json({ message: "Category updated successfully", updatedCategory });
+  } catch (error) {
+    console.error("Error updating category:", error);
+
+    // Cleanup temporary files on error
+    if (req.file && req.file.path) {
+      fs.unlinkSync(req.file.path);
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 };

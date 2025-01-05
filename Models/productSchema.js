@@ -19,15 +19,15 @@ const productSchema = new Schema(
       },
     ],
     MRP: {
-      type: Number,
+      type: String,
       required: true,
     },
     offerPrice: {
-      type: Number,
+      type: String,
       required: true,
     },
     stockCount: {
-      type: Number,
+      type: String,
       required: true,
     },
     sizes: [
