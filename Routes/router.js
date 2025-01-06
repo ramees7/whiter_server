@@ -11,6 +11,7 @@ const {
   resendOtp,
   resendOtpResetPass,
   registerAdmin,
+  updateUser,
 } = require("../Controller/userController"); // Import controller functions
 const { jwtMiddleware } = require("../Middleware/authMiddleware");
 const verifyAdmin = require("../Middleware/adminMiddleware");
@@ -30,6 +31,13 @@ const {
   deleteProduct,
   updateProduct,
 } = require("../Controller/productController");
+const {
+  addReview,
+  getReviews,
+  deleteReview,
+  updateReview,
+} = require("../Controller/ReviewController");
+const { addToCart, viewCart, deleteAllCart, deleteFromCart, updateCartItem } = require("../Controller/cartController");
 
 const router = new express.Router();
 
@@ -39,6 +47,7 @@ router.post("/register-admin", verifyAdmin, registerAdmin);
 router.post("/verify-otp", verifyOtp);
 router.post("/resend-otp", resendOtp);
 router.post("/login", loginUser);
+router.patch("/update-user/:id", jwtMiddleware, updateUser);
 router.post("/logout", jwtMiddleware, logoutUser);
 router.post("/forget-password", forgetPassword);
 router.post("/resend-otp-forget", resendOtpResetPass);
@@ -69,7 +78,12 @@ router.patch(
   multerConfig.single("thumbnail_image"), // Ensure the image field is handled
   updateCategory
 );
-router.delete("/delete-category/:id", verifyAdmin, deleteCategory);
+router.delete(
+  "/delete-category/:id",
+  jwtMiddleware,
+  verifyAdmin,
+  deleteCategory
+);
 router.post(
   "/create-product",
   verifyAdmin,
@@ -87,5 +101,14 @@ router.patch(
   updateProduct
 );
 router.delete("/delete-product/:id", verifyAdmin, deleteProduct);
+router.post("/add-review", jwtMiddleware, addReview);
+router.get("/get-reviews/:id", getReviews);
+router.delete("/delete-review/:id", jwtMiddleware, deleteReview);
+router.patch("/update-review/:id", jwtMiddleware, updateReview);
+router.post("/add-to-cart", jwtMiddleware, addToCart);
+router.get("/view-all-cart", jwtMiddleware, viewCart);
+router.delete("/delete-all-cart", jwtMiddleware, deleteAllCart);
+router.delete("/delete-from-cart/:id", jwtMiddleware, deleteFromCart);
+router.patch("/update-cart/:id", jwtMiddleware, updateCartItem);  // Update quantity or size of an item in the cart
 
 module.exports = router;

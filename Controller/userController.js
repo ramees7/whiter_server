@@ -401,3 +401,66 @@ exports.getCurrentUserDetails = async (req, res) => {
     res.status(500).json("Server Error");
   }
 };
+
+exports.updateUser = async (req, res) => {
+  try {
+    const { name, email, phone, role } = req.body;
+
+    // Get the user ID from the request parameters
+    const userId = req.params.id;
+
+    // Find the existing user by ID
+    const existingUser = await users.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Object to hold updated user data
+    const updatedData = {};
+
+    // If fields are provided, update them
+    if (name && name !== existingUser.name) {
+      updatedData.name = name;
+    }
+
+    if (email && email !== existingUser.email) {
+      // Optional: check if email is already in use by another user
+      const emailInUse = await users.findOne({ email });
+      if (emailInUse && emailInUse._id !== userId) {
+        return res.status(400).json({ message: "Email already in use." });
+      }
+      updatedData.email = email;
+    }
+    if (phone && phone !== existingUser.phone) {
+      // Optional: check if email is already in use by another user
+      const phoneInUse = await users.findOne({ phone });
+      if (phoneInUse && phoneInUse._id !== userId) {
+        return res
+          .status(400)
+          .json({ message: "Phone Number already in use." });
+      }
+      updatedData.phone = phone;
+    }
+
+    if (role && role !== existingUser.role) {
+      updatedData.role = role;
+    }
+
+    // If no updates are found, return a response saying no changes detected
+    if (Object.keys(updatedData).length === 0) {
+      return res.status(400).json({ message: "No changes detected." });
+    }
+
+    // Update the user data in the database
+    const updatedUser = await users.findByIdAndUpdate(userId, updatedData, {
+      new: true, // This ensures the updated user is returned
+    });
+
+    return res
+      .status(200)
+      .json({ message: "User updated successfully", updatedUser });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
