@@ -148,51 +148,6 @@ exports.deleteAllCart = async (req, res) => {
   }
 };
 
-// exports.updateCartItem = async (req, res) => {
-//   try {
-//     const id  = req.params.id;
-//     const { quantity, size } = req.body;
-//     const userId = req.user.userId;
-
-//     // Find the cart for the user
-//     const existingCart = await cart.findOne({ userId });
-//     if (!existingCart) {
-//       return res.status(404).json({ message: "Cart not found" });
-//     }
-
-//     // Find the item to update by its ID
-//     const itemIndex = existingCart.items.findIndex(
-//       (item) => item._id.toString() === id
-//     );
-//     if (itemIndex === -1) {
-//       return res.status(404).json({ message: "Item not found in the cart" });
-//     }
-
-//     // Update the quantity or size
-//     if (quantity) {
-//       existingCart.items[itemIndex].quantity = quantity;
-//     }
-//     if (size) {
-//       existingCart.items[itemIndex].size = size;
-//     }
-
-//     // Recalculate the total price based on updated quantity
-//     const updatedItem = existingCart.items[itemIndex];
-//     updatedItem.total = updatedItem.quantity * updatedItem.price;
-
-//     // Save the updated cart
-//     await existingCart.save();
-
-//     return res.status(200).json({
-//       message: "Cart item updated successfully",
-//       cart: existingCart,
-//     });
-//   } catch (error) {
-//     console.error("Error updating cart item:", error);
-//     return res.status(500).json({ message: "Server error" });
-//   }
-// };
-
 exports.updateCartItem = async (req, res) => {
   try {
     const id = req.params.id;
