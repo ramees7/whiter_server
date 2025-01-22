@@ -16,6 +16,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
+
+
 // Register User (Step 1: Send OTP)
 exports.registerUser = async (req, res) => {
   try {
@@ -216,7 +219,8 @@ exports.loginUser = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
-      token, // Return the generated JWT token
+      token, 
+      role:user.role
     });
   } catch (error) {
     console.error("Error in loginUser:", error);

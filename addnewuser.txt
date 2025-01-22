@@ -1,0 +1,38 @@
+const addNewUser = async () => {
+  try {
+    const name = "shemi";
+    const email = "shemi@gmail.com";
+    const phone = "2222222222";
+    const password = "123123";
+
+    // Check if user already exists
+    const existingUser = await users.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      console.log("User already exists");
+      return;
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const newUser = new users({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role:"admin"
+    });
+
+    await newUser.save();
+
+    console.log("User registered successfully");
+
+  } catch (error) {
+    console.error("Error in addNewUser:", error);
+  }
+};
+
+// Call the function to add a new user
+addNewUser();
