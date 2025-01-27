@@ -5,9 +5,9 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 require("./Connections/db");
 const router = require("./Routes/router");
-const bodyParser = require("body-parser");
+const path = require("path");
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"]; // Update with production URLs
+const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -34,9 +34,12 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
 });
 whiterServer.use(limiter);
-
-whiterServer.use("/uploads", express.static("uploads"));
-whiterServer.use("/api",router);
+whiterServer.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  next();
+});
+whiterServer.use("/api", router);
+whiterServer.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const PORT = process.env.PORT || 4000;
 

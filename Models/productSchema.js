@@ -56,24 +56,20 @@ const productSchema = new Schema(
       type: String,
       required: true,
     },
-    occasion: {
-      type: String,
-      required: true,
-    },
-    pattern: {
-      type: String,
-      required: true,
-    },
-    ratings: {
-      type: Number,
-      required: true,
-      min: 0,
-      max: 5,
-    },
-    reviews: {
-      type: String,
-      required: true,
-    },
+    ratings: [
+      {
+        type: String,
+        required: true,
+        min: 0,
+        max: 5,
+      },
+    ],
+    reviews: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
     sku: {
       type: String,
       required: true,

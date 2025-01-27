@@ -37,7 +37,13 @@ const {
   deleteReview,
   updateReview,
 } = require("../Controller/ReviewController");
-const { addToCart, viewCart, deleteAllCart, deleteFromCart, updateCartItem } = require("../Controller/cartController");
+const {
+  addToCart,
+  viewCart,
+  deleteAllCart,
+  deleteFromCart,
+  updateCartItem,
+} = require("../Controller/cartController");
 
 const router = new express.Router();
 
@@ -64,18 +70,11 @@ router.post(
 );
 router.get("/get-categories", getAllCategories);
 router.get("/get-category/:id", getCategoryById);
-// router.put(
-//   "/updatecategory/:id",
-//   verifyAdmin,
-//   setUploadMiddleware("category"), // Sets the folder context to "categories"
-//   multerConfig.single("thumbnail_image"),
-//   updateCategory
-// );
 router.patch(
-  "/updatecategory/:id",
+  "/update-category/:id",
   verifyAdmin,
-  setUploadMiddleware("category"), // Sets the folder context to "categories"
-  multerConfig.single("thumbnail_image"), // Ensure the image field is handled
+  setUploadMiddleware("category"),
+  multerConfig.single("thumbnail_image"),
   updateCategory
 );
 router.delete(
@@ -109,6 +108,6 @@ router.post("/add-to-cart", jwtMiddleware, addToCart);
 router.get("/view-all-cart", jwtMiddleware, viewCart);
 router.delete("/delete-all-cart", jwtMiddleware, deleteAllCart);
 router.delete("/delete-from-cart/:id", jwtMiddleware, deleteFromCart);
-router.patch("/update-cart/:id", jwtMiddleware, updateCartItem);  // Update quantity or size of an item in the cart
+router.patch("/update-cart/:id", jwtMiddleware, updateCartItem); // Update quantity or size of an item in the cart
 
 module.exports = router;

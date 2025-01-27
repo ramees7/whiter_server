@@ -11,16 +11,11 @@ exports.createProduct = async (req, res) => {
       MRP,
       offerPrice,
       stockCount,
-      sizes,
       brand,
       color,
       description,
       material,
       careInstructions,
-      occasion,
-      pattern,
-      ratings,
-      reviews,
       sku,
     } = req.body;
 
@@ -34,12 +29,11 @@ exports.createProduct = async (req, res) => {
           "Category, title, MRP, offerPrice, stockCount, and SKU are required fields.",
       });
     }
+    const sizesArray = JSON.parse(req.body.sizes);
 
     const existingCategory = await categories.findOne({ _id: category });
     if (!existingCategory) {
-      return res
-        .status(400)
-        .json({ message: "Category not Found." });
+      return res.status(400).json({ message: "Category not Found." });
     }
 
     const existingProduct = await products.findOne({ sku });
@@ -56,16 +50,14 @@ exports.createProduct = async (req, res) => {
       MRP,
       offerPrice,
       stockCount,
-      sizes,
+      sizes: sizesArray,
       brand,
       color,
       description,
       material,
       careInstructions,
-      occasion,
-      pattern,
-      ratings,
-      reviews,
+      ratings: [],
+      reviews: [],
       sku,
     });
 
@@ -73,7 +65,7 @@ exports.createProduct = async (req, res) => {
     await newProduct.save();
 
     // Move uploaded files to the final folder
-    const finalFolder = path.join(__dirname, "../", "uploads/products");
+    const finalFolder = path.join("uploads/products");
     if (!fs.existsSync(finalFolder)) {
       fs.mkdirSync(finalFolder, { recursive: true });
     }
@@ -262,7 +254,7 @@ exports.updateProduct = async (req, res) => {
     // Handle image file uploads (only if new files are uploaded)
     if (req.files && req.files.length > 0) {
       // Final folder for product images
-      const finalFolder = path.join(__dirname, "../", "uploads/products");
+      const finalFolder = path.join("uploads/products");
       if (!fs.existsSync(finalFolder)) {
         fs.mkdirSync(finalFolder, { recursive: true });
       }

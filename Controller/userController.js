@@ -214,7 +214,7 @@ exports.loginUser = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
       process.env.JWT_SUPERKEY, // JWT secret key, should be in environment variables
-      { expiresIn: "1h" } // Token expiration time (1 hour)
+      { expiresIn: "8h" } // Token expiration time (1 hour)
     );
 
     res.status(200).json({
