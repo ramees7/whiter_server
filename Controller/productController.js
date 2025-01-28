@@ -110,11 +110,12 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
-exports.getProductById = async (req, res) => {
+exports.getProductBySku = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { sku } = req.params;
 
-    const product = await products.findById(id);
+    // Ensure findOne receives an object as its filter
+    const product = await products.findOne({ sku });
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -123,7 +124,7 @@ exports.getProductById = async (req, res) => {
       .status(200)
       .json({ message: "Product retrieved successfully", product });
   } catch (error) {
-    console.error("Error fetching product by ID:", error);
+    console.error("Error fetching product by SKU:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

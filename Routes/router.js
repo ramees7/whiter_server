@@ -27,9 +27,9 @@ const setUploadMiddleware = require("../Middleware/uploadMiddleware");
 const {
   createProduct,
   getAllProducts,
-  getProductById,
   deleteProduct,
   updateProduct,
+  getProductBySku,
 } = require("../Controller/productController");
 const {
   addReview,
@@ -91,7 +91,7 @@ router.post(
   createProduct
 );
 router.get("/get-all-products", getAllProducts);
-router.get("/get-product/:id", getProductById);
+router.get("/get-product/:sku", getProductBySku);
 router.patch(
   "/update-product/:id",
   verifyAdmin,

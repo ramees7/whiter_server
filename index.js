@@ -30,7 +30,7 @@ whiterServer.use(express.urlencoded({ extended: true }));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 3000,
   message: "Too many requests from this IP, please try again later.",
 });
 whiterServer.use(limiter);

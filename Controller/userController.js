@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const { blacklistToken } = require("../Middleware/authMiddleware");
+const cart = require("../Models/cartSchema");
 
 let user;
 let otpStore = {}; // Temporary store for OTPs linked to emails
@@ -15,9 +16,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-
-
-
 
 // Register User (Step 1: Send OTP)
 exports.registerUser = async (req, res) => {
@@ -178,9 +176,15 @@ exports.verifyOtp = async (req, res) => {
       role: user.role ? user.role : "user",
     });
 
-    await newUser.save();
+    const savedUser = await newUser.save();
     delete otpStore[user.email]; // Clear OTP after successful registration
 
+    const newCart = new cart({
+      userId: savedUser._id,
+      items: [], // Initialize with an empty array
+    });
+
+    await newCart.save();
     res.status(201).json("Registration Successful");
   } catch (error) {
     console.error("Error in verifyOtp:", error);
@@ -219,8 +223,8 @@ exports.loginUser = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
-      token, 
-      role:user.role
+      token,
+      role: user.role,
     });
   } catch (error) {
     console.error("Error in loginUser:", error);

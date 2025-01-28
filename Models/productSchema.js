@@ -66,8 +66,10 @@ const productSchema = new Schema(
     ],
     reviews: [
       {
-        type: String,
-        required: true,
+        title: { type: String, required: true },
+        buyer: { type: String, required: true },
+        date: { type: Date, required: true },
+        rating: { type: Number, required: true },
       },
     ],
     sku: {

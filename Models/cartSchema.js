@@ -22,7 +22,15 @@ const cartSchema = new mongoose.Schema({
         type: String, // You can adjust the type as per the size options (Small, Medium, Large, etc.)
         required: true,
       },
-      SKU: {
+      sku: {
+        type: String,
+        required: true, // Unique SKU for the product variant
+      },
+      productTitle: {
+        type: String,
+        required: true, // Unique SKU for the product variant
+      },
+      productThumbnail: {
         type: String,
         required: true, // Unique SKU for the product variant
       },

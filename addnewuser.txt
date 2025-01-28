@@ -1,8 +1,9 @@
+
 const addNewUser = async () => {
   try {
-    const name = "shemi";
-    const email = "shemi@gmail.com";
-    const phone = "2222222222";
+    const name = "ramees";
+    const email = "ramees@gmail.com";
+    const phone = "1010101010";
     const password = "123123";
 
     // Check if user already exists
@@ -22,13 +23,18 @@ const addNewUser = async () => {
       email,
       phone,
       password: hashedPassword,
-      role:"admin"
+      role: "user",
     });
 
-    await newUser.save();
+    const savedUser = await newUser.save();
 
+    const newCart = new cart({
+      userId: savedUser._id,
+      items: [], // Initialize with an empty array
+    })
+
+    await newCart.save();
     console.log("User registered successfully");
-
   } catch (error) {
     console.error("Error in addNewUser:", error);
   }
