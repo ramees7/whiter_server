@@ -1,16 +1,69 @@
 const reviews = require("../Models/reviewSchema");
 const mongoose = require("mongoose");
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
+const products = require("../Models/productSchema");
+
+// exports.addReview = async (req, res) => {
+//   try {
+//     const { productId, review, stars } = req.body;
+
+//     // Use userId from the JWT payload (set by jwtMiddleware)
+//     const userId = req.user.userId;
+
+//     // Validate required fields
+//     if (
+//       !mongoose.Types.ObjectId.isValid(userId) ||
+//       !mongoose.Types.ObjectId.isValid(productId)
+//     ) {
+//       return res.status(400).json({ message: "Invalid userId or productId" });
+//     }
+
+//     // Validate star rating
+//     if (stars != null && (stars < 1 || stars > 5)) {
+//       return res.status(400).json({ message: "Stars must be between 1 and 5" });
+//     }
+
+//     // Ensure at least 'review' or 'stars' is provided
+//     if (!review && stars == null) {
+//       return res
+//         .status(400)
+//         .json({ message: "Either 'review' or 'stars' must be provided" });
+//     }
+
+//     // Check if the user already reviewed this product
+//     const existingReview = await reviews.findOne({ userId, productId });
+//     if (existingReview) {
+//       return res
+//         .status(409)
+//         .json({ message: "User has already reviewed this product" });
+//     }
+
+//     // Create new review
+//     const newReview = new reviews({
+//       userId,
+//       productId,
+//       review,
+//       stars,
+//     });
+
+//     // Save review to the database
+//     await newReview.save();
+
+//     return res
+//       .status(201)
+//       .json({ message: "Review added successfully", newReview });
+//   } catch (error) {
+//     console.error("Error adding review:", error);
+//     return res.status(500).json({ message: "Server error", error });
+//   }
+// };
 
 exports.addReview = async (req, res) => {
   try {
     const { productId, review, stars } = req.body;
+    const userId = req.user.userId; // Extracted from JWT
 
-    // Use userId from the JWT payload (set by jwtMiddleware)
-    const userId = req.user.userId;
-
-    // Validate required fields
     if (
       !mongoose.Types.ObjectId.isValid(userId) ||
       !mongoose.Types.ObjectId.isValid(productId)
@@ -18,25 +71,22 @@ exports.addReview = async (req, res) => {
       return res.status(400).json({ message: "Invalid userId or productId" });
     }
 
-    // Validate star rating
     if (stars != null && (stars < 1 || stars > 5)) {
       return res.status(400).json({ message: "Stars must be between 1 and 5" });
     }
 
-    // Ensure at least 'review' or 'stars' is provided
     if (!review && stars == null) {
       return res
         .status(400)
         .json({ message: "Either 'review' or 'stars' must be provided" });
     }
 
-    // Check if the user already reviewed this product
-    const existingReview = await reviews.findOne({ userId, productId });
-    if (existingReview) {
-      return res
-        .status(409)
-        .json({ message: "User has already reviewed this product" });
-    }
+    // const existingReview = await reviews.findOne({ userId, productId });
+    // if (existingReview) {
+    //   return res
+    //     .status(409)
+    //     .json({ message: "User has already reviewed this product" });
+    // }
 
     // Create new review
     const newReview = new reviews({
@@ -46,8 +96,14 @@ exports.addReview = async (req, res) => {
       stars,
     });
 
-    // Save review to the database
     await newReview.save();
+
+    // Add the new review's ObjectId to the product's reviews array
+    await products.findByIdAndUpdate(
+      productId,
+      { $push: { reviews: newReview._id } },
+      { new: true }
+    );
 
     return res
       .status(201)
@@ -122,9 +178,6 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
-
-
-
 exports.updateReview = async (req, res) => {
   try {
     const { review, stars } = req.body;
@@ -144,10 +197,14 @@ exports.updateReview = async (req, res) => {
     const updatedReviewText = review || existingReview.review;
     const updatedStarRating = stars || existingReview.stars;
 
-    
     // If no updates are detected, return an error message
-    if (updatedReviewText === existingReview.review && updatedStarRating === existingReview.stars) {
-      return res.status(400).json({ message: "No changes detected. Review was not updated." });
+    if (
+      updatedReviewText === existingReview.review &&
+      updatedStarRating === existingReview.stars
+    ) {
+      return res
+        .status(400)
+        .json({ message: "No changes detected. Review was not updated." });
     }
 
     // Prepare the updated data
@@ -166,7 +223,9 @@ exports.updateReview = async (req, res) => {
       { new: true } // Return the updated review object
     );
 
-    return res.status(200).json({ message: "Review updated successfully", updatedReview });
+    return res
+      .status(200)
+      .json({ message: "Review updated successfully", updatedReview });
   } catch (error) {
     console.error("Error updating review:", error);
     return res.status(500).json({ message: "Server error" });

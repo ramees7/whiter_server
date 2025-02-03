@@ -56,7 +56,7 @@ exports.createProduct = async (req, res) => {
       description,
       material,
       careInstructions,
-      ratings: [],
+      // ratings: [],
       reviews: [],
       sku,
     });
@@ -115,7 +115,11 @@ exports.getProductBySku = async (req, res) => {
     const { sku } = req.params;
 
     // Ensure findOne receives an object as its filter
-    const product = await products.findOne({ sku });
+    const product = await products.findOne({ sku }).populate({
+      path: "reviews",
+      populate: { path: "userId", select: "name" }, // Populate user details (name, email)
+    });
+
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }

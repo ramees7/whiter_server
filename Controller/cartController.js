@@ -42,8 +42,6 @@ exports.addToCart = async (req, res) => {
       quantity,
       size,
       sku,
-      productTitle: product.title,
-      productThumbnail: product.imageUrls[0],
       price: product.offerPrice,
       total: totalPrice,
     });
@@ -73,7 +71,7 @@ exports.addToCart = async (req, res) => {
 
 //     // Calculate total price for the product based on quantity
 //     const totalPrice = product.offerPrice * quantity;
-    
+
 //     let existingCart = await cart.findOne({ userId });
 //     if (!existingCart) {
 //       existingCart = new cart({ userId, items: [] });
@@ -126,7 +124,10 @@ exports.addToCart = async (req, res) => {
 exports.viewCart = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const existingCart = await cart.findOne({ userId });
+    const existingCart = await cart
+      .findOne({ userId })
+      .populate("userId", "name email") // Fetch user details (adjust fields as needed)
+      .populate("items.productId","imageUrls title");
 
     if (!existingCart) {
       return res.status(404).json({ message: "Cart not found" });
@@ -240,8 +241,6 @@ exports.updateCartItem = async (req, res) => {
 
     // Recalculate the total price based on updated quantity
     existingItem.total = existingItem.quantity * existingItem.price;
-
-    // Save the updated cart
     await existingCart.save();
 
     return res.status(200).json({

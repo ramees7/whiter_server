@@ -36,7 +36,7 @@ const {
   getReviews,
   deleteReview,
   updateReview,
-} = require("../Controller/ReviewController");
+} = require("../Controller/reviewController");
 const {
   addToCart,
   viewCart,

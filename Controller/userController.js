@@ -398,9 +398,9 @@ exports.logoutUser = (req, res) => {
 exports.getCurrentUserDetails = async (req, res) => {
   try {
     const userId = req.user.userId;
-    console.log(userId);
-    const user = await users.findById(userId).select("-password"); // Exclude the password
-    console.log(user);
+    // console.log(userId);
+    const user = await users.findById(userId).select("-password")
+    // console.log(user);
     res.status(200).json({
       user, // Return the generated JWT token
     });

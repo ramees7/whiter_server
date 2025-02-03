@@ -26,14 +26,6 @@ const cartSchema = new mongoose.Schema({
         type: String,
         required: true, // Unique SKU for the product variant
       },
-      productTitle: {
-        type: String,
-        required: true, // Unique SKU for the product variant
-      },
-      productThumbnail: {
-        type: String,
-        required: true, // Unique SKU for the product variant
-      },
       price: {
         type: String,
         required: true,
