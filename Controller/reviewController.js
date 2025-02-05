@@ -81,12 +81,12 @@ exports.addReview = async (req, res) => {
         .json({ message: "Either 'review' or 'stars' must be provided" });
     }
 
-    // const existingReview = await reviews.findOne({ userId, productId });
-    // if (existingReview) {
-    //   return res
-    //     .status(409)
-    //     .json({ message: "User has already reviewed this product" });
-    // }
+    const existingReview = await reviews.findOne({ userId, productId });
+    if (existingReview) {
+      return res
+        .status(409)
+        .json({ message: "Already reviewed this product" });
+    }
 
     // Create new review
     const newReview = new reviews({
@@ -116,22 +116,10 @@ exports.addReview = async (req, res) => {
 
 exports.getReviews = async (req, res) => {
   try {
-    const productId = req.params.id;
-    console.log(productId);
-
-    // Validate productId (required)
-    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: "Invalid or missing productId" });
-    }
-
-    // Fetch all reviews for the provided productId
-    const reviewsList = await reviews.find({ productId });
-
-    if (!reviewsList.length) {
-      return res
-        .status(404)
-        .json({ message: "No reviews found for this product" });
-    }
+    const reviewsList = await reviews
+      .find()
+      .populate("userId", "name") // Fetch user name & email
+      .populate("productId", "imageUrls sku");
 
     return res.status(200).json({
       message: "Reviews retrieved successfully",
@@ -166,6 +154,14 @@ exports.deleteReview = async (req, res) => {
       return res
         .status(403)
         .json({ message: "You are not authorized to delete this review" });
+    }
+
+    const product = await products.findOne({ reviews: reviewId });
+    if (product) {
+      product.reviews = product.reviews.filter(
+        (reviewRef) => reviewRef.toString() !== reviewId
+      );
+      await product.save(); // Save the updated product
     }
 
     // Delete the review

@@ -16,18 +16,25 @@ exports.createProduct = async (req, res) => {
       description,
       material,
       careInstructions,
-      sku,
     } = req.body;
 
     // Validation
-    if (!category || !title || !MRP || !offerPrice || !stockCount || !sku) {
+    if (!category || !title || !MRP || !offerPrice || !stockCount) {
       return res.status(400).json({ message: "Required fields are missing." });
     }
-    if (!category || !title || !MRP || !offerPrice || !stockCount || !sku) {
+    if (!category || !title || !MRP || !offerPrice || !stockCount) {
       return res.status(400).json({
         message:
-          "Category, title, MRP, offerPrice, stockCount, and SKU are required fields.",
+          "Category, title, MRP, offerPrice, stockCount are required fields.",
       });
+    }
+    const lastProduct = await products.findOne().sort({ sku: -1 }).limit(1);
+    let newSku = "w-1000"; // Default SKU for the first product
+
+    if (lastProduct) {
+      // Get the numeric part of the SKU and increment it
+      const lastSkuNumber = parseInt(lastProduct.sku.split("-")[1]);
+      newSku = `w-${lastSkuNumber + 1}`;
     }
     const sizesArray = JSON.parse(req.body.sizes);
 
@@ -36,7 +43,7 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: "Category not Found." });
     }
 
-    const existingProduct = await products.findOne({ sku });
+    const existingProduct = await products.findOne({ newSku });
     if (existingProduct) {
       return res
         .status(409)
@@ -58,7 +65,7 @@ exports.createProduct = async (req, res) => {
       careInstructions,
       // ratings: [],
       reviews: [],
-      sku,
+      sku: newSku,
     });
 
     // Save product to the database
@@ -99,7 +106,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
-    const productsList = await products.find();
+    const productsList = await products.find().populate("category");
     return res.status(200).json({
       message: "Products retrieved successfully",
       products: productsList,
@@ -115,10 +122,13 @@ exports.getProductBySku = async (req, res) => {
     const { sku } = req.params;
 
     // Ensure findOne receives an object as its filter
-    const product = await products.findOne({ sku }).populate({
-      path: "reviews",
-      populate: { path: "userId", select: "name" }, // Populate user details (name, email)
-    });
+    const product = await products
+      .findOne({ sku })
+      .populate({
+        path: "reviews",
+        populate: { path: "userId", select: "name" }, // Populate user details (name, email)
+      })
+      .populate("category", "category_name");
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -175,60 +185,90 @@ exports.updateProduct = async (req, res) => {
       description,
       material,
       careInstructions,
-      occasion,
-      pattern,
-      ratings,
-      reviews,
+      existingImageUrls, // Add existing images from request
     } = req.body;
-    const productId = req.params.id; // Assuming productId is passed as a URL parameter
 
-    // Find the existing product by ID (sku can also be used, but we are assuming a productId here)
-    const existingProduct = await products.findById(productId);
+    const sku = req.params.sku; // Get product SKU from URL
+
+    // Find the existing product by SKU
+    const existingProduct = await products.findOne({ sku: sku });
     if (!existingProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    let updatedProductData = {};
+    let updatedProductData = { ...existingProduct._doc }; // Preserve existing product data
     let isUpdated = false;
 
-    // Check if each field has changed and update accordingly
-    if (category && category !== existingProduct.category) {
-      updatedProductData.category = category;
+    // Check for updated fields and log them
+    if (sizes) {
+      const sizesArray = sizes.split(","); // Convert the comma-separated string back into an array
+      if (
+        JSON.stringify(sizesArray) !== JSON.stringify(existingProduct.sizes)
+      ) {
+        console.log(
+          `Updating sizes: ${JSON.stringify(
+            existingProduct.sizes
+          )} -> ${JSON.stringify(sizesArray)}`
+        );
+        updatedProductData.sizes = sizesArray;
+        isUpdated = true;
+      }
+    }
+
+    // Check for other fields...
+    if (category && category !== existingProduct.category._id.toString()) {
+      console.log(
+        `Updating category ID: ${existingProduct.category._id} -> ${category}`
+      );
+      updatedProductData.category = { _id: category }; // Assuming category is stored by ID
       isUpdated = true;
     }
     if (title && title !== existingProduct.title) {
+      console.log(`Updating title: ${existingProduct.title} -> ${title}`);
       updatedProductData.title = title;
       isUpdated = true;
     }
     if (MRP && MRP !== existingProduct.MRP) {
+      console.log(`Updating MRP: ${existingProduct.MRP} -> ${MRP}`);
       updatedProductData.MRP = MRP;
       isUpdated = true;
     }
     if (offerPrice && offerPrice !== existingProduct.offerPrice) {
+      console.log(
+        `Updating offerPrice: ${existingProduct.offerPrice} -> ${offerPrice}`
+      );
       updatedProductData.offerPrice = offerPrice;
       isUpdated = true;
     }
     if (stockCount && stockCount !== existingProduct.stockCount) {
+      console.log(
+        `Updating stockCount: ${existingProduct.stockCount} -> ${stockCount}`
+      );
       updatedProductData.stockCount = stockCount;
       isUpdated = true;
     }
-    if (sizes && sizes !== existingProduct.sizes) {
-      updatedProductData.sizes = sizes;
-      isUpdated = true;
-    }
+
     if (brand && brand !== existingProduct.brand) {
+      console.log(`Updating brand: ${existingProduct.brand} -> ${brand}`);
       updatedProductData.brand = brand;
       isUpdated = true;
     }
     if (color && color !== existingProduct.color) {
+      console.log(`Updating color: ${existingProduct.color} -> ${color}`);
       updatedProductData.color = color;
       isUpdated = true;
     }
     if (description && description !== existingProduct.description) {
+      console.log(
+        `Updating description: ${existingProduct.description} -> ${description}`
+      );
       updatedProductData.description = description;
       isUpdated = true;
     }
     if (material && material !== existingProduct.material) {
+      console.log(
+        `Updating material: ${existingProduct.material} -> ${material}`
+      );
       updatedProductData.material = material;
       isUpdated = true;
     }
@@ -236,65 +276,46 @@ exports.updateProduct = async (req, res) => {
       careInstructions &&
       careInstructions !== existingProduct.careInstructions
     ) {
+      console.log(
+        `Updating careInstructions: ${existingProduct.careInstructions} -> ${careInstructions}`
+      );
       updatedProductData.careInstructions = careInstructions;
       isUpdated = true;
     }
-    if (occasion && occasion !== existingProduct.occasion) {
-      updatedProductData.occasion = occasion;
-      isUpdated = true;
-    }
-    if (pattern && pattern !== existingProduct.pattern) {
-      updatedProductData.pattern = pattern;
-      isUpdated = true;
-    }
-    if (ratings && ratings !== existingProduct.ratings) {
-      updatedProductData.ratings = ratings;
-      isUpdated = true;
-    }
-    if (reviews && reviews !== existingProduct.reviews) {
-      updatedProductData.reviews = reviews;
-      isUpdated = true;
-    }
 
-    // Handle image file uploads (only if new files are uploaded)
+    // Preserve existing images from request
+    updatedProductData.imageUrls = existingImageUrls
+      ? JSON.parse(existingImageUrls)
+      : existingProduct.imageUrls;
+
+    // Handle newly uploaded images
     if (req.files && req.files.length > 0) {
-      // Final folder for product images
       const finalFolder = path.join("uploads/products");
       if (!fs.existsSync(finalFolder)) {
         fs.mkdirSync(finalFolder, { recursive: true });
       }
 
-      // Move uploaded files to the final folder and update image URLs
       req.files.forEach((file) => {
-        const tempPath = file.path;
         const finalPath = path.join(finalFolder, path.basename(file.filename));
-        fs.renameSync(tempPath, finalPath); // Move file
-        updatedProductData.imageUrls = updatedProductData.imageUrls || []; // Initialize if not already
-        updatedProductData.imageUrls.push(finalPath); // Update image URLs in the product
+        fs.renameSync(file.path, finalPath); // Move file
+        updatedProductData.imageUrls.push(finalPath); // Append new image URLs
       });
 
-      // If the product had existing images, delete them (to avoid leftover files)
-      existingProduct.imageUrls.forEach((imagePath) => {
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath); // Delete old image file
-        }
-      });
+      isUpdated = true;
     }
 
     // If no changes were detected
-    if (!isUpdated && !updatedProductData.imageUrls) {
+    if (!isUpdated) {
       return res
         .status(400)
         .json({ message: "No changes detected. Product was not updated." });
     }
 
-    // Update the product with the modified data
-    const updatedProduct = await products.findByIdAndUpdate(
-      productId,
+    // Update the product with new and existing images
+    const updatedProduct = await products.findOneAndUpdate(
+      { sku: sku },
       updatedProductData,
-      {
-        new: true, // Return the updated product object
-      }
+      { new: true } // Return updated product
     );
 
     return res
@@ -302,14 +323,6 @@ exports.updateProduct = async (req, res) => {
       .json({ message: "Product updated successfully", updatedProduct });
   } catch (error) {
     console.error("Error updating product:", error);
-
-    // Cleanup temporary files on error
-    if (req.files) {
-      req.files.forEach((file) => {
-        fs.unlinkSync(file.path);
-      });
-    }
-
     return res.status(500).json({ message: "Server error", error });
   }
 };

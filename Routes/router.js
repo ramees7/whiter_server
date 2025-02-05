@@ -12,6 +12,8 @@ const {
   resendOtpResetPass,
   registerAdmin,
   updateUser,
+  getAllUsers,
+  deleteUser,
 } = require("../Controller/userController"); // Import controller functions
 const { jwtMiddleware } = require("../Middleware/authMiddleware");
 const verifyAdmin = require("../Middleware/adminMiddleware");
@@ -55,12 +57,14 @@ router.post("/resend-otp", resendOtp);
 router.post("/login", loginUser);
 router.patch("/update-user/:id", jwtMiddleware, updateUser);
 router.post("/logout", jwtMiddleware, logoutUser);
+router.delete("/delete-user/:id", jwtMiddleware, deleteUser);
 router.post("/forget-password", forgetPassword);
 router.post("/resend-otp-forget", resendOtpResetPass);
 router.post("/verify-password-otp", verifyOtpForPasswordReset);
 router.post("/reset-password", resetPassword);
 router.get("/admin-profile", jwtMiddleware, verifyAdmin, getCurrentUserDetails);
 router.get("/user-profile", jwtMiddleware, getCurrentUserDetails);
+router.get("/all-users", verifyAdmin, getAllUsers);
 router.post(
   "/create-category",
   verifyAdmin, // Verifies the user is an admin
@@ -93,7 +97,7 @@ router.post(
 router.get("/get-all-products", getAllProducts);
 router.get("/get-product/:sku", getProductBySku);
 router.patch(
-  "/update-product/:id",
+  "/update-product/:sku",
   verifyAdmin,
   setUploadMiddleware("product"),
   multerConfig.array("imageUrls", 5),
@@ -101,7 +105,7 @@ router.patch(
 );
 router.delete("/delete-product/:id", verifyAdmin, deleteProduct);
 router.post("/add-review", jwtMiddleware, addReview);
-router.get("/get-reviews/:id", getReviews);
+router.get("/get-reviews",verifyAdmin, getReviews);
 router.delete("/delete-review/:id", jwtMiddleware, deleteReview);
 router.patch("/update-review/:id", jwtMiddleware, updateReview);
 router.post("/add-to-cart", jwtMiddleware, addToCart);

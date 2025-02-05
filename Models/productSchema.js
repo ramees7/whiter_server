@@ -112,6 +112,11 @@ const productSchema = new Schema(
     // ratings: [{ type: Number, min: 1, max: 5 }],
     reviews: [{ type: Schema.Types.ObjectId, ref: "reviews" }], // Store references to review documents
     sku: { type: String, required: true, unique: true },
+
+
+    //for sales
+    salesCount: { type: Number, default: 0 }, // Tracks the number of units sold
+    totalRevenue: { type: Number, default: 0 }, // Tracks the total revenue from sales
   },
   { timestamps: true }
 );
