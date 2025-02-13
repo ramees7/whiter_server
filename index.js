@@ -7,7 +7,7 @@ require("./Connections/db");
 const router = require("./Routes/router");
 const path = require("path");
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174","https://whiter-web.netlify.app/"];
+const allowedOrigins = ["http://localhost:5173", "http://localhost:5174","https://whiter-web.netlify.app"];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
