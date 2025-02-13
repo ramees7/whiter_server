@@ -46,6 +46,10 @@ const {
   deleteFromCart,
   updateCartItem,
 } = require("../Controller/cartController");
+const {
+  createRazorpayOrder,
+  processPaymentAndOrder,
+} = require("../Controller/orderController");
 
 const router = new express.Router();
 
@@ -105,7 +109,7 @@ router.patch(
 );
 router.delete("/delete-product/:id", verifyAdmin, deleteProduct);
 router.post("/add-review", jwtMiddleware, addReview);
-router.get("/get-reviews",verifyAdmin, getReviews);
+router.get("/get-reviews", verifyAdmin, getReviews);
 router.delete("/delete-review/:id", jwtMiddleware, deleteReview);
 router.patch("/update-review/:id", jwtMiddleware, updateReview);
 router.post("/add-to-cart", jwtMiddleware, addToCart);
@@ -113,5 +117,7 @@ router.get("/view-all-cart", jwtMiddleware, viewCart);
 router.delete("/delete-all-cart", jwtMiddleware, deleteAllCart);
 router.delete("/delete-from-cart/:id", jwtMiddleware, deleteFromCart);
 router.patch("/update-cart/:id", jwtMiddleware, updateCartItem); // Update quantity or size of an item in the cart
+router.post("/create-razorpay-order", jwtMiddleware, createRazorpayOrder);
+router.post("/verify-razorpay-payment", jwtMiddleware, processPaymentAndOrder);
 
 module.exports = router;

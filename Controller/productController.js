@@ -15,6 +15,7 @@ exports.createProduct = async (req, res) => {
       color,
       description,
       material,
+      itemVolume,
       careInstructions,
     } = req.body;
 
@@ -53,7 +54,7 @@ exports.createProduct = async (req, res) => {
     const newProduct = new products({
       category,
       title,
-      imageUrls: [], // Placeholder for images
+      imageUrls: [],
       MRP,
       offerPrice,
       stockCount,
@@ -63,8 +64,8 @@ exports.createProduct = async (req, res) => {
       description,
       material,
       careInstructions,
-      // ratings: [],
       reviews: [],
+      itemVolume,
       sku: newSku,
     });
 
@@ -152,7 +153,6 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Optionally, delete product images from the server
     if (product.imageUrls && product.imageUrls.length > 0) {
       product.imageUrls.forEach((imagePath) => {
         const fullPath = path.join(__dirname, "..", imagePath);
@@ -217,58 +217,58 @@ exports.updateProduct = async (req, res) => {
 
     // Check for other fields...
     if (category && category !== existingProduct.category._id.toString()) {
-      console.log(
-        `Updating category ID: ${existingProduct.category._id} -> ${category}`
-      );
+      // console.log(
+      //   `Updating category ID: ${existingProduct.category._id} -> ${category}`
+      // );
       updatedProductData.category = { _id: category }; // Assuming category is stored by ID
       isUpdated = true;
     }
     if (title && title !== existingProduct.title) {
-      console.log(`Updating title: ${existingProduct.title} -> ${title}`);
+      // console.log(`Updating title: ${existingProduct.title} -> ${title}`);
       updatedProductData.title = title;
       isUpdated = true;
     }
     if (MRP && MRP !== existingProduct.MRP) {
-      console.log(`Updating MRP: ${existingProduct.MRP} -> ${MRP}`);
+      // console.log(`Updating MRP: ${existingProduct.MRP} -> ${MRP}`);
       updatedProductData.MRP = MRP;
       isUpdated = true;
     }
     if (offerPrice && offerPrice !== existingProduct.offerPrice) {
-      console.log(
-        `Updating offerPrice: ${existingProduct.offerPrice} -> ${offerPrice}`
-      );
+      // console.log(
+      //   `Updating offerPrice: ${existingProduct.offerPrice} -> ${offerPrice}`
+      // );
       updatedProductData.offerPrice = offerPrice;
       isUpdated = true;
     }
     if (stockCount && stockCount !== existingProduct.stockCount) {
-      console.log(
-        `Updating stockCount: ${existingProduct.stockCount} -> ${stockCount}`
-      );
+      // console.log(
+      //   `Updating stockCount: ${existingProduct.stockCount} -> ${stockCount}`
+      // );
       updatedProductData.stockCount = stockCount;
       isUpdated = true;
     }
 
     if (brand && brand !== existingProduct.brand) {
-      console.log(`Updating brand: ${existingProduct.brand} -> ${brand}`);
+      // console.log(`Updating brand: ${existingProduct.brand} -> ${brand}`);
       updatedProductData.brand = brand;
       isUpdated = true;
     }
     if (color && color !== existingProduct.color) {
-      console.log(`Updating color: ${existingProduct.color} -> ${color}`);
+      // console.log(`Updating color: ${existingProduct.color} -> ${color}`);
       updatedProductData.color = color;
       isUpdated = true;
     }
     if (description && description !== existingProduct.description) {
-      console.log(
-        `Updating description: ${existingProduct.description} -> ${description}`
-      );
+      // console.log(
+      //   `Updating description: ${existingProduct.description} -> ${description}`
+      // );
       updatedProductData.description = description;
       isUpdated = true;
     }
     if (material && material !== existingProduct.material) {
-      console.log(
-        `Updating material: ${existingProduct.material} -> ${material}`
-      );
+      // console.log(
+      //   `Updating material: ${existingProduct.material} -> ${material}`
+      // );
       updatedProductData.material = material;
       isUpdated = true;
     }
@@ -276,9 +276,9 @@ exports.updateProduct = async (req, res) => {
       careInstructions &&
       careInstructions !== existingProduct.careInstructions
     ) {
-      console.log(
-        `Updating careInstructions: ${existingProduct.careInstructions} -> ${careInstructions}`
-      );
+      // console.log(
+      //   `Updating careInstructions: ${existingProduct.careInstructions} -> ${careInstructions}`
+      // );
       updatedProductData.careInstructions = careInstructions;
       isUpdated = true;
     }
