@@ -39,12 +39,16 @@ const limiter = rateLimit({
 });
 whiterServer.use(limiter);
 whiterServer.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Resource-Policy", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Access-Control-Allow-Origin", "*"); // Allow all origins for testing
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true"); // Important for cookies/auth
   next();
 });
+whiterServer.options("*", cors(corsOptions));
 whiterServer.use("/api", router);
 whiterServer.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
