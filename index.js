@@ -7,7 +7,11 @@ require("./Connections/db");
 const router = require("./Routes/router");
 const path = require("path");
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174","https://whiter-web.netlify.app"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://whiter-web.netlify.app",
+];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -35,7 +39,10 @@ const limiter = rateLimit({
 });
 whiterServer.use(limiter);
 whiterServer.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  res.setHeader("Cross-Origin-Resource-Policy", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 });
 whiterServer.use("/api", router);
