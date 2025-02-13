@@ -25,7 +25,7 @@ const {
   updateCategory,
 } = require("../Controller/categoryController");
 const multerConfig = require("../Middleware/imageMiddleware");
-const setUploadMiddleware = require("../Middleware/uploadMiddleware");
+// const setUploadMiddleware = require("../Middleware/uploadMiddleware");
 const {
   createProduct,
   getAllProducts,
@@ -50,6 +50,7 @@ const {
   createRazorpayOrder,
   processPaymentAndOrder,
 } = require("../Controller/orderController");
+const setUploadMiddleware = require("../Middleware/imageMiddleware");
 
 const router = new express.Router();
 
@@ -72,8 +73,7 @@ router.get("/all-users", verifyAdmin, getAllUsers);
 router.post(
   "/create-category",
   verifyAdmin, // Verifies the user is an admin
-  setUploadMiddleware("category"), // Sets the folder context to "categories"
-  multerConfig.single("thumbnail_image"), // Handles the file upload
+  setUploadMiddleware("categories").single("thumbnail_image"), // Handles the file upload
   createCategory // Controller function
 );
 router.get("/get-categories", getAllCategories);
@@ -81,8 +81,7 @@ router.get("/get-category/:id", getCategoryById);
 router.patch(
   "/update-category/:id",
   verifyAdmin,
-  setUploadMiddleware("category"),
-  multerConfig.single("thumbnail_image"),
+  setUploadMiddleware("categories").single("thumbnail_image"),
   updateCategory
 );
 router.delete(
@@ -94,17 +93,22 @@ router.delete(
 router.post(
   "/create-product",
   verifyAdmin,
-  setUploadMiddleware("product"),
-  multerConfig.array("imageUrls", 5),
+  setUploadMiddleware("products").array("imageUrls", 5),
   createProduct
 );
+// router.post(
+//   "/create-product",
+//   verifyAdmin,
+//   setUploadMiddleware("product"),
+//   multerConfig.array("imageUrls", 5),
+//   createProduct
+// );
 router.get("/get-all-products", getAllProducts);
 router.get("/get-product/:sku", getProductBySku);
 router.patch(
   "/update-product/:sku",
   verifyAdmin,
-  setUploadMiddleware("product"),
-  multerConfig.array("imageUrls", 5),
+  setUploadMiddleware("products").array("imageUrls", 5),
   updateProduct
 );
 router.delete("/delete-product/:id", verifyAdmin, deleteProduct);

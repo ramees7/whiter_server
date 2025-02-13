@@ -23,7 +23,7 @@ const addNewUser = async () => {
       email,
       phone,
       password: hashedPassword,
-      role: "user",
+      role: "admin",
     });
 
     const savedUser = await newUser.save();

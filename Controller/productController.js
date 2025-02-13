@@ -2,6 +2,7 @@ const categories = require("../Models/categorySchema");
 const products = require("../Models/productSchema");
 const fs = require("fs");
 const path = require("path");
+const cloudinary = require("../Connections/cloudinary");
 
 exports.createProduct = async (req, res) => {
   try {
@@ -50,11 +51,25 @@ exports.createProduct = async (req, res) => {
         .status(409)
         .json({ message: "Product with this SKU already exists" });
     }
+
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(async (file) => {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "products",
+          use_filename: true,
+          unique_filename: false,
+        });
+        return result.secure_url; // Store Cloudinary URL
+      });
+
+      imageUrls = await Promise.all(uploadPromises);
+    }
     // Create product logic
     const newProduct = new products({
       category,
       title,
-      imageUrls: [],
+      imageUrls,
       MRP,
       offerPrice,
       stockCount,
@@ -73,17 +88,17 @@ exports.createProduct = async (req, res) => {
     await newProduct.save();
 
     // Move uploaded files to the final folder
-    const finalFolder = path.join("uploads/products");
-    if (!fs.existsSync(finalFolder)) {
-      fs.mkdirSync(finalFolder, { recursive: true });
-    }
+    // const finalFolder = path.join("uploads/products");
+    // if (!fs.existsSync(finalFolder)) {
+    //   fs.mkdirSync(finalFolder, { recursive: true });
+    // }
 
-    req.files.forEach((file) => {
-      const tempPath = file.path;
-      const finalPath = path.join(finalFolder, path.basename(file.filename));
-      fs.renameSync(tempPath, finalPath); // Move file
-      newProduct.imageUrls.push(finalPath); // Update image URLs in the product
-    });
+    // req.files.forEach((file) => {
+    //   const tempPath = file.path;
+    //   const finalPath = path.join(finalFolder, path.basename(file.filename));
+    //   fs.renameSync(tempPath, finalPath); // Move file
+    //   newProduct.imageUrls.push(finalPath); // Update image URLs in the product
+    // });
 
     // Save updated product with image URLs
     await newProduct.save();
@@ -143,7 +158,6 @@ exports.getProductBySku = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -153,13 +167,12 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    // Delete images from Cloudinary
     if (product.imageUrls && product.imageUrls.length > 0) {
-      product.imageUrls.forEach((imagePath) => {
-        const fullPath = path.join(__dirname, "..", imagePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      });
+      for (const imageUrl of product.imageUrls) {
+        const publicId = imageUrl.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`products/${publicId}`);
+      }
     }
 
     return res
@@ -289,18 +302,34 @@ exports.updateProduct = async (req, res) => {
       : existingProduct.imageUrls;
 
     // Handle newly uploaded images
+    // if (req.files && req.files.length > 0) {
+    //   const finalFolder = path.join("uploads/products");
+    //   if (!fs.existsSync(finalFolder)) {
+    //     fs.mkdirSync(finalFolder, { recursive: true });
+    //   }
+
+    //   req.files.forEach((file) => {
+    //     const finalPath = path.join(finalFolder, path.basename(file.filename));
+    //     fs.renameSync(file.path, finalPath); // Move file
+    //     updatedProductData.imageUrls.push(finalPath); // Append new image URLs
+    //   });
+
+    //   isUpdated = true;
+    // }
+
     if (req.files && req.files.length > 0) {
-      const finalFolder = path.join("uploads/products");
-      if (!fs.existsSync(finalFolder)) {
-        fs.mkdirSync(finalFolder, { recursive: true });
+      let newImageUrls = [];
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "products",
+        });
+        newImageUrls.push(result.secure_url);
       }
 
-      req.files.forEach((file) => {
-        const finalPath = path.join(finalFolder, path.basename(file.filename));
-        fs.renameSync(file.path, finalPath); // Move file
-        updatedProductData.imageUrls.push(finalPath); // Append new image URLs
-      });
-
+      updatedProductData.imageUrls = [
+        ...updatedProductData.imageUrls,
+        ...newImageUrls,
+      ];
       isUpdated = true;
     }
 
